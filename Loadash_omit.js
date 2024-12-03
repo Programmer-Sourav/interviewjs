@@ -29,3 +29,33 @@ function loadashomit(obj, path){
         loadashomit(obj[curKey], keys.slice(1));
     }
 }
+
+function lodash_omit(obj, path){
+    if(obj ===null || typeof(obj)!=="object"){
+        return;
+    }
+    let keys = [];
+    
+    if(!Array.isArray(path)){
+        path = path.replaceAll("[", ".")
+        path = path.replaceAll("]", ".")
+        keys = path.split(".")
+    }
+    else{
+        keys = path;
+    }
+
+    const currentKey = keys[0];
+
+    if(keys.length===1){
+        if(Array.isArray(obj[currentKey])){
+            obj[currentKey].splice(currentKey, 1)
+        }
+        else{
+            delete obj[currentKey]
+        }
+    }
+    else{
+        lodash_omit(obj[currentKey], path)
+    }
+}

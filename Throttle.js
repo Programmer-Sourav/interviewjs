@@ -20,3 +20,17 @@ const fetchData = () =>{
 
 const throttledFn = throttle(fetchData, 40)
 document.addEventListener('mousemove', throttledFn);
+
+const throttleFn = (mainFn, interval) =>{
+    const lastCall = 0;
+    return function(...args){
+    const now = Date.now();
+    if(now - lastCall>=interval){
+        lastCall = now; 
+        mainFn.apply(this, args);
+    }   
+    }
+}
+
+const throttledHandleScroll = throttleFn(()=>{console.log("Scroll Event Triggered!")}, 200)
+window.addEventListener("scroll", throttledHandleScroll);

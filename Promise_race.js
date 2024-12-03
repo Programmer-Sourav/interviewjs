@@ -1,7 +1,7 @@
 Promise.race = function(input){
 
 return new Promise((resolve, reject)=>{
-    input.array.forEach(element => {
+    input.forEach(element => {
         Promise.resolve(element).then((value)=>resolve(value))
         .catch((reason)=>reject(reason))
     });

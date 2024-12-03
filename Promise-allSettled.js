@@ -8,7 +8,7 @@ if(!Promise.allSettled){
                 if(completedCount===promises.length)
                 resolve(results);
             }
-            promises.array.forEach((promise, index) => {
+            promises.forEach((promise, index) => {
                 promise.then(value=>{
                     results[index] = {status: "fulfilled", value}
                     completedCount ++;

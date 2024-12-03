@@ -45,3 +45,21 @@ console.log(curriedJoin(_,_,_,2)(1,3)(4))
 console.log(curriedJoin(_, _, _, _)(_, 2, _)(_, 3)(1));
 console.log(curriedJoin(_, _, 3, 4)(1, _)(2, 5));
 console.log(curriedJoin(_, _, 2)(_, 3)(_, 4)(_, _, 5)(6));
+
+
+function curryPlaceHolder(mainFunc){
+    const placeholder = "_"
+    function curried (...args){
+         // If args count matches func's parameter count, execute func
+         if(args.length>=mainFunc.length && !args.contain(placeholder)){
+            return mainFunc(...args)
+         }
+         else{
+            return(...nextArgs)=>{
+                const mergedArgs = args.map(arg=>(arg === placeholder ? nextArgs.shift() : arg))
+                return curried(...mergedArgs)
+            }
+         }
+    }
+    return curried;
+}

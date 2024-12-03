@@ -1,6 +1,6 @@
 Promise.all = function(promises){
     const result = [];
-    let totalResolved = 0;
+    let completedCount = 0;
 
     return new Promise((resolve, reject)=>{
         if(promises.length === 0){
@@ -11,7 +11,7 @@ Promise.all = function(promises){
             resolve(result);
         }
 
- promises.array.forEach((element, index) => {
+ promises.forEach((element, index) => {
 // We need to wrap each `elem` in Promise.resolve(),
 // since `elem` can be any value other than a Promise
 //as well

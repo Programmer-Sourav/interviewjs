@@ -54,3 +54,20 @@ console.log(flattenSecondApproach(arr1, 2));
 console.log(flattenSecondApproach(arr1, 2));
 // [1, 2, 3, 4]
 console.log(flattenSecondApproach(arr2, 2));
+
+
+/*** Revise */
+function flattenRevise(arr, depth=1){
+  if(depth==0){
+    return arr;
+  }
+  const result = [];
+  for(let i =0; i<arr.length; i++){
+     if(!Array.isArray(arr[i])){
+        result.push(arr[i])
+     }
+     else{
+        result.push(...flattenRevise(arr[i], depth-1))
+     }
+  }
+}

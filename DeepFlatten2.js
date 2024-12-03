@@ -38,3 +38,20 @@ j: 'Hi'
 console.log(flatten(obj1));
 
 console.log(flatten(obj2));
+
+
+////Revise deep flatten
+
+function deepFlattenRevise2(input){
+  let result = {}
+
+  for(let key in input){
+     if(typeof(input[key]==='object' && input[key]!=null)){
+        return {...result, ...deepFlattenRevise2(input[key])}
+     }
+     else{
+        result[key] = input[key]
+     }
+  }
+  return result;
+}

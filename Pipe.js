@@ -45,3 +45,13 @@ function pipe(...args){
            }, initialFun)
     }
 }
+
+//sync and async funcs
+
+function pipe(...funcs){
+  return function(initialArgument){
+    return funcs.reduce((acc, currentFn)=>{
+      return acc.then(result=>currentFn(result))
+  }, Promise.resolve(initialArgument))
+  }
+}

@@ -8,7 +8,7 @@ Promise.any = function (input) {
             return reject(new AggregrateError(errors, 'Empty Array'))
         }
 
-        input.array.forEach((element,index) => {
+        input.forEach((element,index) => {
             Promise.resolve(element).then((value)=>{resolve(value)})
         }).catch((reason) =>{
             errors[index] = reason;

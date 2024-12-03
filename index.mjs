@@ -127,3 +127,20 @@ function wrapNegative(){
     //if it given index is (-), then get the item from the end... index won't start with 0 for this case
     
 }
+
+
+const debounced = (mainFn, delay) =>{
+    let timerId;
+
+    return function(...args){
+    clearTimeout(timerId)   
+     timerId = setTimeout(()=>{mainFn(...args)}, delay)
+    }
+}
+
+let startTime = Date.now();
+const fetchData = () =>{
+    console.log(`fetchData called after ${Date.now() - startTime}ms`)
+}
+
+const debounceFn = debounced(fetchData, 50);
