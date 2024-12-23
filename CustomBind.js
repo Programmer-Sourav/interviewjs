@@ -29,3 +29,13 @@ Function.prototype.bind = function customBind(thisArg, ...args){
         return result;
     }
 }
+
+Function.prototype.bind = function customBind(thisArg, ...args){
+  const fn = this;
+  const context = Object(thisArg);
+  const key = Symbol()
+  context[key] = fn;
+  return function(){
+    return context[key](...args)
+  }
+}

@@ -18,15 +18,21 @@ const fetchData = () =>{
 const debounceFn = debounced(fetchData, 50);
 
 setTimeout(debounceFn, 30);
-setTimeout(debounceFn, 50)
+setTimeout(debounceFn, 50);
 
 
 /////Debounce Revise
-
-const debouncedRevise = (mainFn, delay) =>{
+const debouncedRevise = function(mainFn, delay){
   let timerId;
-  return function(...args){
-    clearInterval(timerId);
-    timerId = setTimeout(()=>{mainFn(...args)}, delay)
-  }
+    return function debouncedVersion(...args){
+        clearTimeout(timerId)
+       timerId =setTimeout(()=>{
+           mainFn.bind(this, ...args)
+        }, delay)
+    }
 }
+
+const debounceFn1 = debouncedRevise(fetchData, 50);
+
+setTimeout(debounceFn, 30);
+setTimeout(debounceFn, 50);

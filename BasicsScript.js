@@ -4,6 +4,7 @@ console.log("IIFE");
 
 
 function welcome(name){
+  
    var greetingInfo = function (message){
     console.log(message + " "+ name)
    }

@@ -8,9 +8,6 @@
  * 
  */
 
-function fetchData(){
-
-}
 
 // function AutoRetryPromise(){
 //   const maxRetry = 5;
@@ -73,3 +70,26 @@ function fetchData() {
 AutoRetryPromise()
   .then((result) => console.log('Final Success:', result))
   .catch((error) => console.error('Final Error:', error))
+
+
+ //untill retry count reaches to zero, in the catch we will retry
+
+ function autoRetryPromises(fetchData, retryCount){
+
+     return new Promise((resolve, reject)=>{
+           
+      (function retryFetch(){
+          fetchData().then((value)=>resolve(value)).catch((error)=>{
+                 if(retryCount-->0)
+                  retryFetch()
+                 else
+                 reject(error)
+          })
+      })()
+
+     })
+ }
+
+ autoRetryPromises(fetchData(), 3)
+.then(console.log)
+.catch(console.log)

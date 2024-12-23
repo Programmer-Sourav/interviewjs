@@ -77,3 +77,34 @@ async function fetchComments(){
     }
 }
 fetchComments();
+
+
+
+function getUser2(userId, callback){
+    setTimeout(()=>{
+        console.log("User Details...")
+        callback({userId: userId, username:  "John Doe"})
+    }, 1000)
+}
+
+function getPosts2(userName, callback){
+    setTimeout(()=>{
+        console.log(`Posts for the User.... ${userName}`)
+        callback(["Post1", "Post2", "Post3"])
+    }, 1000)
+}
+
+function getComments2(postId, callback){
+    setTimeout(()=>{
+        console.log(`Get Comments for the Post... ${postId}`)
+        callback(["Comment1", "Comment2", "Comment3"])
+    }, 1000)
+}
+
+getUser2(1, (user)=>{
+    getPosts2(user.username, (postId)=>{
+        getComments2(postId[0], (comments)=>{
+             console.log("Comments ",comments)
+        } )
+    })
+})

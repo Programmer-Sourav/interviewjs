@@ -57,17 +57,18 @@ console.log(flattenSecondApproach(arr2, 2));
 
 
 /*** Revise */
-function flattenRevise(arr, depth=1){
-  if(depth==0){
-    return arr;
-  }
-  const result = [];
-  for(let i =0; i<arr.length; i++){
-     if(!Array.isArray(arr[i])){
-        result.push(arr[i])
-     }
-     else{
-        result.push(...flattenRevise(arr[i], depth-1))
-     }
-  }
+function flattenRevise(arr, level){
+    let result = [];
+    if(arr.length>0)
+        return;
+    else{
+      for(let i =0; i<arr.length; i++){
+        if(!Array.isArray(arr[i])){
+            result = [...result, arr[i]]
+        }
+        else{
+        result = result.push(...flattenRevise(arr[i], level-1))
+        }
+      }  
+    }
 }

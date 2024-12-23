@@ -38,16 +38,13 @@ log(curriedTotal(10)(20,30)(40))
 
 
 //revise
-
-const curryRevise = (mainFn) =>{
-
-    return function curried(...args){
-        if(args.length>= mainFn.length){
-            return mainFn(...args)
-        }
-        else{
-            return curried.bind(null, ...args)
-        }
+const  curried = (mainFn) =>{
+    return function  curriedVersion(...args){
+       if(args.length>= mainFn.length){
+        return mainFn(...args);
+       }
+       else{
+        return curriedVersion.bind(null, ...args)
+       }
     }
-
 }
