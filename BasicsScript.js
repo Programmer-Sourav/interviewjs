@@ -75,6 +75,10 @@ let codes = {
       }
    }
  }
+   console.log(multiplyNumeric({'a' : 4, 'b': "What's up", "c": 3}))
+   8
+   VM993:1 What's up
+   VM993:1 6
 
 let a = {};
 let b = a; // copy the reference
@@ -483,7 +487,7 @@ new Promise((resolve, reject) => {
   resolve("ok");
 }).then((result) => {
   throw new Error("Whoops!"); // rejects the promise
-}).catch(console.log(result)); // Error: Whoops!
+}).catch(console.log()); // Error: Whoops!
 
 
 Promise.all([

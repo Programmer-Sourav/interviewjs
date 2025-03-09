@@ -34,3 +34,16 @@ const throttleFn = (mainFn, interval) =>{
 
 const throttledHandleScroll = throttleFn(()=>{console.log("Scroll Event Triggered!")}, 200)
 window.addEventListener("scroll", throttledHandleScroll);
+
+/******Functuin Throttle */
+
+const throttleFnRevise = (mainFn, delayInterval) =>{
+   const lastCall = 0;
+   return function(...args){
+    const now = Date.now();
+    if(now - lastCall>=delayInterval){
+        lastCall = now;
+        mainFn.apply(this, args);
+    }
+   }
+}

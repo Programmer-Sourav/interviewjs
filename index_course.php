@@ -6,8 +6,13 @@ require_once 'fpdf/fpdf.php';
 require 'PHPMailer/Exception.php';
 require 'PHPMailer/PHPMailer.php';
 require 'PHPMailer/SMTP.php';
+require_once __DIR__ . '/vendor/autoload.php';
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 
 \Slim\Slim::registerAutoloader();
@@ -15,17 +20,285 @@ use PHPMailer\PHPMailer\Exception;
 $app = new \Slim\Slim();
 
 
-$app->get('/available_colleges', 'getAvailableColleges');
-$app->get('/available_courses/:collegeName', 'getAvailableCourses');
-$app->post('/post_application_form', 'saveApplicationDetails');
-$app->post('/upload_documents', 'uploadDocuments');
+$app->get('/available_colleges', 'authenticate', 'getAvailableColleges');
+$app->get ('/available_colleges_by_course/:courseName', 'authenticate', 'getAvailableCollegesByCourse');
+$app->get ('/available_brochures/:collegeName', 'authenticate', 'getAvailableBrochuresByCollege');
+$app->get ('/available_courses/:collegeName', 'authenticate', 'getAvailableCourses');
+$app->post('/post_application_form', 'authenticate', 'saveApplicationDetails');
+$app->post('/upload_documents', /*'authenticate',*/ 'uploadDocuments');
 $app->post('/post_annoucement', 'saveAnnouncementDetails');
-$app->get('/get_annoucement', 'getAnnouncementDetails');
-$app->get('/retrieve_document/:id', 'retrieveDocument');
+$app->get ('/get_annoucement', 'getAnnouncementDetails');
+$app->get ('/retrieve_document/:id', 'retrieveDocument');
 $app->post('/upload_images', 'uploadImagesForSlider');
-$app->post('/retrieve_slider_images', 'retrieveSliderImages')
+$app->get ('/retrieve_slider_images', 'retrieveSliderImages');
+$app->post('/login', 'loginStudent');
+$app->post('/admin_login', 'adminLogin');
+$app->post('/institute_login', 'instituteLogin');
+$app->post('/register_user','registerUser');
+$app->get ('/get_courses', 'getCoursesAvailable');
+$app->post('/save_course','saveCourseDetails');
+$app->post('/upload_brochures','uploadBrochures');
+$app->post('/upload_screenshots', 'uploadPaymentScreenshots');
+
 $app->run();
 
+
+
+function loginStudent() {
+    $app = \Slim\Slim::getInstance();
+    $json = $app->request->getBody();
+    $data = json_decode($json, true);
+
+    if (!empty($data['username']) && !empty($data['password'])) {
+        $username = $data['username'];
+        $password = $data['password'];
+
+        $sql = "SELECT * FROM users WHERE username = :username";
+        try {
+            $db = getDB2();
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user) {
+           
+                    $secretKey = "SAP_123@DOCS#SECRET";
+                    $issuedAt = time();
+                    $expirationTime = $issuedAt + 3600;
+
+                    $payload = [
+                        "iat" => $issuedAt,
+                        //"exp" => $expirationTime,
+                        "user_id" => $user['id'],
+                        "username" => $user['username']
+                    ];
+
+                    $jwt = JWT::encode($payload, $secretKey, 'HS256');
+                    echo json_encode([
+                        "status" => 200,
+                        "message" => "Login successful",
+                        "userDetails" => ["authToken"=> $jwt, "userId"=>$user['id'], "username"=>$user['username']],
+                    ]);
+                } else {
+                    echo json_encode(["status" => 401, "message" => "Invalid credentials."]);
+                }
+            } 
+         catch (PDOException $e) {
+            echo json_encode(["status" => 500, "message" => "Database error.", "error" => $e->getMessage()]);
+        }
+    } else {
+        echo json_encode(["status" => 400, "message" => "Missing username or password."]);
+         }
+}
+
+
+
+
+function adminLogin() {
+    $app = \Slim\Slim::getInstance();
+    $json = $app->request->getBody();
+    $data = json_decode($json, true);
+
+    if (!empty($data['username']) && !empty($data['password'])) {
+        $username = $data['username'];
+        $password = $data['password'];
+
+        $sql = "SELECT * FROM users WHERE username = :username";
+        try {
+            $db = getDB2();
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user) {
+           
+                    $secretKey = "SAP_123@DOCS#SECRET";
+                    $issuedAt = time();
+                    $expirationTime = $issuedAt + 3600;
+
+                    $payload = [
+                        "iat" => $issuedAt,
+                        //"exp" => $expirationTime,
+                        "user_id" => $user['id'],
+                        "username" => $user['username']
+                    ];
+
+                    $jwt = JWT::encode($payload, $secretKey, 'HS256');
+                    echo json_encode([
+                        "status" => 200,
+                        "message" => "Login successful",
+                        "userDetails" => ["authToken"=> $jwt, "userId"=>$user['id'], "username"=>$user['username']],
+                    ]);
+                } else {
+                    echo json_encode(["status" => 401, "message" => "Invalid credentials."]);
+                }
+            } 
+         catch (PDOException $e) {
+            echo json_encode(["status" => 500, "message" => "Database error.", "error" => $e->getMessage()]);
+        }
+    } else {
+        echo json_encode(["status" => 400, "message" => "Missing username or password."]);
+         }
+}
+
+
+function instituteLogin() {
+    $app = \Slim\Slim::getInstance();
+    $json = $app->request->getBody();
+    $data = json_decode($json, true);
+
+    if (!empty($data['username']) && !empty($data['password'])) {
+        $username = $data['username'];
+        $password = $data['password'];
+
+        $sql = "SELECT * FROM users WHERE username = :username";
+        try {
+            $db = getDB2();
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user) {
+                $hashedPassword = $user['password'];
+                $salt = $user['salt'];
+
+                // Verify password
+                if (password_verify($password . $salt, $hashedPassword)) {
+                    // Generate JWT token
+                    $secretKey = "SAP_123@DOCS#SECRET"; // Replace with a strong secret key
+                    $issuedAt = time();
+                    $expirationTime = $issuedAt + 3600; // Token valid for 1 hour
+
+                    $payload = [
+                        "iat" => $issuedAt,
+                        "exp" => $expirationTime,
+                        "user_id" => $user['id'],
+                        "username" => $user['username']
+                    ];
+
+                    $jwt = JWT::encode($payload, $secretKey, 'HS256');
+
+                    echo json_encode([
+                        "status" => 200,
+                        "message" => "Login successful",
+                        "token" => $jwt
+                    ]);
+                } else {
+                    echo json_encode([
+                        "status" => 401,
+                        "message" => "Invalid credentials"
+                    ]);
+                }
+            } else {
+                echo json_encode([
+                    "status" => 401,
+                    "message" => "Invalid credentials"
+                ]);
+            }
+        } catch (PDOException $e) {
+            echo json_encode([
+                "status" => 500,
+                "message" => "Database error",
+                "error" => $e->getMessage()
+            ]);
+        }
+    } else {
+        echo json_encode([
+            "status" => 400,
+            "message" => "Missing username or password"
+        ]);
+    }
+}
+
+
+function registerUser() {
+    $app = \Slim\Slim::getInstance();
+    $json = $app->request->getBody();
+    $data = json_decode($json, true);
+
+    if (!empty($data['username']) && !empty($data['password']) && !empty($data['userPhone'])) {
+        $username = $data['username'];
+        $password = $data['password'];
+        $phoneNumber = $data['userPhone'];
+
+        $db = getDB2();
+
+        $sql1 = "SELECT * FROM users WHERE username = :username ";
+        $stmt1 = $db->prepare($sql1);
+        $stmt1->bindParam(':username', $username);
+     
+        $stmt1->execute();
+
+        if ($stmt1->rowCount() > 0) {
+            echo json_encode(["status" => 409, "message" => "Username already registered."]);
+        } else {
+            $sql = "INSERT INTO users (username, password, created_at, userType, phonenumber) VALUES (:username, :password, NOW(), 'Student', :phonenumber)";
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam(':username', $username);
+            $stmt->bindParam(':password', $password);
+            $stmt->bindParam(':phonenumber', $phoneNumber);
+
+            if ($stmt->execute()) {
+                // Generate JWT token after successful registration
+                $userId = $db->lastInsertId(); // Get the last inserted user ID
+                $secretKey = "SAP_123@DOCS#SECRET"; // Replace with a strong secret key
+                $issuedAt = time();
+                $expirationTime = $issuedAt + 3600; // Token valid for 1 hour
+
+                $payload = [
+                    "iat" => $issuedAt,
+                    "exp" => $expirationTime,
+                    "user_id" => $userId,
+                    "username" => $username
+                ];
+
+                $jwt = JWT::encode($payload, $secretKey, 'HS256');
+
+                echo json_encode([
+                    "status" => 200,
+                    "message" => "User registered successfully.",
+                    "userDetails" => ["authToken"=> $jwt, "userId"=>$userId, "username"=>$username],
+                ]);
+            } else {
+                echo json_encode(["status" => 500, "message" => "Error registering user."]);
+            }
+        }
+    } else {
+        echo json_encode(["status" => 400, "message" => "Missing username or password."]);
+    }
+}
+
+
+function authenticate(\Slim\Route $route) {
+    $app = \Slim\Slim::getInstance();
+    $headers = $app->request->headers;
+
+    if (!isset($headers['Authorization'])) {
+        $app->halt(401, json_encode(['error' => 'Unauthorized. Token is missing.']));
+    }
+
+    $authHeader = $headers['Authorization'];
+    $token = str_replace('Bearer ', '', $authHeader); // Extract the token (assuming Bearer token)
+
+    try {
+        $secretKey = "SAP_123@DOCS#SECRET"; // Replace with your actual secret key
+        $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
+
+        // Optional: Set the decoded payload (user data) in the Slim app instance
+        $app->user = $decoded;
+
+    } catch (\Firebase\JWT\ExpiredException $e) {
+        $app->halt(401, json_encode(['error' => 'Token has expired.']));
+    } catch (\Exception $e) {
+        $app->halt(401, json_encode(['error' => 'Invalid token.', 'details' => $e->getMessage()]));
+    }
+}
 
 function getAvailableColleges()
 {
@@ -59,8 +332,86 @@ function getAvailableColleges()
 }
 
 
+function getAvailableBrochuresByCollege($collegename)
+{
+    $sql = "SELECT * FROM `brochureLinks` WHERE collegeName LIKE :collegeName";
+    $searchTerm = "%$collegename%";
+    try {
+        $db = getDB2(); // Assumes getDB2() is a valid function that returns a DB 
+        $statement = $db->prepare($sql);
+        $statement->bindParam (":collegeName", $searchTerm );
+        $statement->execute();
+        $availableColleges = $statement->fetchAll(PDO::FETCH_OBJ);
+      
+        $arr = [
+            "status" => 200,
+            "message" => "List of Brochures Found",
+            "data" => $availableColleges
+        ];
+    } catch (PDOException $ex) {
+        $arr = [
+            "status" => 500,
+            "message" => "Error, No Brochures Found.",
+            "error" => $ex->getMessage() // Optionally include the error message for debugging
+        ];
+    }
+
+    // Wrapping the response
+    $arr1 = [
+        "response" => $arr
+    ];
+
+    // Encode the array into a JSON string and send it as the response
+    echo json_encode($arr1);
+}
+
+function getAvailableCollegesByCourse($coursename)
+{
+    $sql = "SELECT * FROM `CollegeDetails` WHERE filterBy LIKE :coursename";
+    $searchTerm = "%$coursename%";
+    try {
+        $db = getDB2(); // Assumes getDB2() is a valid function that returns a DB 
+        $statement = $db->prepare($sql);
+        $statement->bindParam (":coursename", $searchTerm );
+        $statement->execute();
+        $availableColleges = $statement->fetchAll(PDO::FETCH_OBJ);
+      
+        $arr = [
+            "status" => 200,
+            "message" => "List of Colleges Found",
+            "data" => $availableColleges
+        ];
+    } catch (PDOException $ex) {
+        $arr = [
+            "status" => 500,
+            "message" => "Error, No Colleges Found.",
+            "error" => $ex->getMessage() // Optionally include the error message for debugging
+        ];
+    }
+
+    // Wrapping the response
+    $arr1 = [
+        "response" => $arr
+    ];
+
+    // Encode the array into a JSON string and send it as the response
+    echo json_encode($arr1);
+}
+
 function getAnnouncementDetails(){
-    $sql = "SELECT * FROM noticeboard";
+    $sql = "SELECT 
+    noticeboard.*, 
+    SapDocuments.* 
+FROM 
+    noticeboard
+LEFT JOIN 
+    SapDocuments 
+ON 
+    noticeboard.announcementId = SapDocuments.announcementId
+WHERE 
+    noticeboard.announcementId != '' 
+    AND (SapDocuments.announcementId IS NOT NULL OR SapDocuments.announcementId IS NULL);
+";
     try {
         $db = getDB2(); // Assumes getDB2() is a valid function that returns a DB 
         $statement = $db->prepare($sql);
@@ -76,6 +427,37 @@ function getAnnouncementDetails(){
         $arr = [
             "status" => 500,
             "message" => "Error, No Colleges Found.",
+            "error" => $ex->getMessage() // Optionally include the error message for debugging
+        ];
+    }
+
+    // Wrapping the response
+    $arr1 = [
+        "response" => $arr
+    ];
+
+    // Encode the array into a JSON string and send it as the response
+    echo json_encode($arr1);
+}
+
+
+function getCoursesAvailable(){
+    $sql = "SELECT *FROM CoursesAvailable";
+    try {
+        $db = getDB2(); // Assumes getDB2() is a valid function that returns a DB 
+        $statement = $db->prepare($sql);
+        $statement->execute();
+        $availableCourses = $statement->fetchAll(PDO::FETCH_OBJ);
+      
+        $arr = [
+            "status" => 200,
+            "message" => "All Courses!",
+            "data" => $availableCourses
+        ];
+    } catch (PDOException $ex) {
+        $arr = [
+            "status" => 500,
+            "message" => "Error, No Courses Found.",
             "error" => $ex->getMessage() // Optionally include the error message for debugging
         ];
     }
@@ -138,17 +520,19 @@ function saveAnnouncementDetails(){
     if($json!=null){
         $data = json_decode($json, true);
 
-        if(!empty($data['header']) && !empty($data['notice'])){
+        if(!empty($data['header']) && !empty($data['notice']) && !empty($data['announcementId'])){
             $header = $data['header'];
             $notice = $data['notice'];
+            $announcementId = $data['announcementId'];
          
     
-            $sql = "INSERT INTO noticeboard(header, announcementdate, notice) VALUES (:header, NOW(), :notice)";
+            $sql = "INSERT INTO noticeboard(header, announcementdate, notice, announcementId) VALUES (:header, NOW(), :notice, :announcementId)";
             try{
                 $db = getDB2();
                 $statement = $db->prepare($sql);
                 $statement->bindParam(":header", $header);
                 $statement->bindParam(":notice", $notice);
+                $statement->bindParam(":announcementId", $announcementId);
                 $statement->execute();
             
                 $arr = array (
@@ -156,6 +540,55 @@ function saveAnnouncementDetails(){
                     "status" => 200,
                     "success"=> true,
                     "message" => "Application Data successfully inserted.",
+                    "data"=>$data
+        
+                );         
+    
+            }
+            catch(PDOException $ex){
+                $arr = array (
+                    "status" => 500,
+                    "success"=> false,
+                    "message" => "Internal Server Error. Error saving Application Details",
+                    "data"=>$json
+                );             
+            } 
+        }
+        }
+        $arr1 = array (
+            "response" => $arr
+        );
+    
+        echo json_encode ( $arr1 );
+    
+}
+
+function saveCourseDetails(){
+    $app = \Slim\Slim::getInstance ();
+    $json = $app->request->getBody();
+    $arr = array ();
+
+ 
+    if($json!=null){
+        $data = json_decode($json, true);
+
+        if(!empty($data['coursename'])){
+    
+            $coursename = $data['coursename'];
+         
+    
+            $sql = "INSERT INTO CoursesAvailable(coursename) VALUES (:coursename)";
+            try{
+                $db = getDB2();
+                $statement = $db->prepare($sql);
+                $statement->bindParam(":coursename", $coursename);
+                $statement->execute();
+            
+                $arr = array (
+    
+                    "status" => 200,
+                    "success"=> true,
+                    "message" => "Course Data successfully inserted.",
                     "data"=>$data
         
                 );         
@@ -193,11 +626,23 @@ function saveApplicationDetails(){
         && !empty($data['schoolName']) && !empty($data['twelfth_marks']) && !empty($data['madhyamik_marks']) && !empty($data['entrance_test_type']) 
         && !empty($data['enter_rank']) && !empty($data['street_address_1']) && !empty($data['street_address_2']) && !empty($data['city'])
         && !empty($data['state']) && !empty($data['pinCode']) && !empty($data['phoneNumber']) && !empty($data['course_willing_to_study'])
-        && !empty($data['studentEmail'])){
+        && !empty($data['studentEmail']) && !empty($data['username'])){
             
-        
+            $username = $data['username'];
+            $sql1 = "SELECT studentUniqueId FROM users WHERE username = :username and studentUniqueId != ''";
+            $db = getDB2();
+           $stmt1 = $db->prepare($sql1);
+           $stmt1->bindParam(':username', $username);
+          $stmt1->execute();
 
-        $auto_student_id = "stu2024".floor(rand(31, 999)*31);
+          $auto_student_id = "";
+if ($stmt1->rowCount() > 0) {
+    $result = $stmt1->fetch(PDO::FETCH_ASSOC);
+    $auto_student_id = $result['studentUniqueId'];
+} else {
+    $auto_student_id = "stu2024" . floor(rand(31, 999) * 31);
+}
+
      
         $firstName = $data['firstname'];
         $lastName = $data['lastname'];
@@ -216,8 +661,10 @@ function saveApplicationDetails(){
         $phoneNumber = $data['phoneNumber'];
         $courseWillingToStudy = $data['course_willing_to_study'];
         $studentEmail = $data['studentEmail'];
-
-        $sql = "INSERT INTO ApplicationDetails(auto_student_id, stu_firstName, stu_lastName, parent_first_name, parent_last_name, schoolName, twelfth_marks, madhyamik_marks, entrance_test_type, student_rank, street_address_1, street_address_2, city, state, pinCode, phoneNumber, course_willing_to_study, student_email ) VALUES (:autoStudentId, :firstName, :lastName, :parent_first_name, :parent_last_name, :schoolName, :twelfth_marks, :madhyamik_marks, :entrance_test_type, :enter_rank, :street_address_1, :street_address_2, :city, :state, :pinCode, :phoneNumber, :course_willing_to_study, :student_email)";
+        $selectedCollege = $data['selectedCollege'];
+       
+    
+        $sql = "INSERT INTO ApplicationDetails(auto_student_id, stu_firstName, stu_lastName, parent_first_name, parent_last_name, schoolName, twelfth_marks, madhyamik_marks, entrance_test_type, student_rank, street_address_1, street_address_2, city, state, pinCode, phoneNumber, course_willing_to_study, student_email, college_willing_to_study) VALUES (:autoStudentId, :firstName, :lastName, :parent_first_name, :parent_last_name, :schoolName, :twelfth_marks, :madhyamik_marks, :entrance_test_type, :enter_rank, :street_address_1, :street_address_2, :city, :state, :pinCode, :phoneNumber, :course_willing_to_study, :student_email, :college_willing_to_study)";
         try{
             $db = getDB2();
             $statement = $db->prepare($sql);
@@ -239,11 +686,29 @@ function saveApplicationDetails(){
             $statement->bindParam(":pinCode", $pinCode);
             $statement->bindParam(":phoneNumber", $phoneNumber);
             $statement->bindParam(":course_willing_to_study", $courseWillingToStudy);
+            $statement->bindParam(":college_willing_to_study", $selectedCollege);
             $statement ->bindParam(":student_email", $studentEmail);
             $statement->execute();
             //echo "4444 ".$auto_student_id; 
          $emailStatus = generatePdfReport($auto_student_id, $firstName, $studentEmail);
 
+         $sql = "UPDATE users SET studentUniqueId= :studentUniqueId WHERE username = :username";
+         try{
+             $db = getDB2();
+             $statement = $db->prepare($sql);
+             $statement->bindParam(":studentUniqueId", $auto_student_id);
+             $statement->bindParam(":username", $username);
+             $statement->execute();
+          }
+          catch(PDOException $ex){
+            $arr = array (
+                "status" => 500,
+                "success"=> false,
+                "message" => "Not able to update database",
+                "data"=>$json
+            );
+          }
+             
             $arr = array (
 
                 "status" => 200,
@@ -280,9 +745,11 @@ function saveApplicationDetails(){
 // Function to handle the file upload
 function uploadDocuments()
 {
+    $app = \Slim\Slim::getInstance();
+
     // Directory to save uploaded files
     $directory = __DIR__ . '/uploads';
-   
+
     if (!file_exists($directory)) {
         mkdir($directory, 0777, true); // Ensure the directory exists
     }
@@ -293,86 +760,196 @@ function uploadDocuments()
         return;
     }
 
-    $uploadedFile = $_FILES['file'];
-
-    // Check for errors in the upload process
-    if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['error' => 'Error during file upload']);
+    // Get the username from the POST data
+    $username = isset($_POST['username']) ? $_POST['username'] : null;
+    $announcementId = isset($_POST['announcementId']) ? $_POST['announcementId'] : null;
+    if (!$username) {
+        echo json_encode(['error' => 'Username is required']);
         return;
     }
 
-    // Generate a unique file name
-    $extension = pathinfo($uploadedFile['name'], PATHINFO_EXTENSION);
-    $basename = bin2hex(random_bytes(8)); // Generate a random name
-    $filename = sprintf('%s.%s', $basename, $extension);
+    $responses = [];
+    $uploadedFiles = $_FILES['file'];
 
-    // Move the file to the upload directory
-    $targetPath = $directory . DIRECTORY_SEPARATOR . $filename;
-    if (move_uploaded_file($uploadedFile['tmp_name'], $targetPath)) {
-        echo json_encode(['message' => 'File uploaded successfully', 'filename' => $filename]);
-    } else {
-        echo json_encode(['error' => 'Failed to move uploaded file']);
+    // Validate structure: Handle multiple or single uploads
+    $fileCount = is_array($uploadedFiles['name']) ? count($uploadedFiles['name']) : 1;
+
+    for ($i = 0; $i < $fileCount; $i++) {
+        // Adjust access based on whether it's a single or multiple upload
+        $name = is_array($uploadedFiles['name']) ? $uploadedFiles['name'][$i] : $uploadedFiles['name'];
+        $tmpName = is_array($uploadedFiles['tmp_name']) ? $uploadedFiles['tmp_name'][$i] : $uploadedFiles['tmp_name'];
+        $error = is_array($uploadedFiles['error']) ? $uploadedFiles['error'][$i] : $uploadedFiles['error'];
+
+        if ($error !== UPLOAD_ERR_OK) {
+            $responses[] = ['error' => 'Error during file upload for file: ' . $name];
+            continue;
+        }
+
+        $extension = pathinfo($name, PATHINFO_EXTENSION);
+        $basename = bin2hex(random_bytes(8));
+        $filename = sprintf('%s.%s', $basename, $extension);
+        $targetPath = $directory . DIRECTORY_SEPARATOR . $filename;
+
+        $sql1 = "SELECT studentUniqueId FROM users WHERE username = :username AND studentUniqueId != ''";
+        $db = getDB2();
+        $stmt1 = $db->prepare($sql1);
+        $stmt1->bindParam(':username', $username);
+        $stmt1->execute();
+
+        $auto_student_id = "";
+        if ($stmt1->rowCount() > 0) {
+            $result = $stmt1->fetch(PDO::FETCH_ASSOC);
+            $auto_student_id = $result['studentUniqueId'];
+        }
+
+        if (move_uploaded_file($tmpName, $targetPath)) {
+            try {
+                $filePath = $targetPath;
+                $newPath = str_replace('/home3/traveoxg/public_html/', 'https://www.travelsawari.com/', $filePath);
+
+                $stmt = $db->prepare("INSERT INTO SapDocuments(studentUniqueId, filePath, uploaded_at, announcementId) VALUES (:studentUniqueId, :file_path, NOW(), :announcementId)");
+                $stmt->bindParam(':studentUniqueId', $auto_student_id);
+                $stmt->bindParam(':file_path', $newPath);
+                $stmt->bindParam(':announcementId', $announcementId);
+                $stmt->execute();
+
+                $responses[] = [
+                    'message' => 'File uploaded and saved to database successfully',
+                    'filename' => $filename,
+                    'file_path' => $filePath,
+                ];
+            } catch (PDOException $e) {
+                $responses[] = ['error' => 'Database error: ' . $e->getMessage()];
+            }
+        } else {
+            $responses[] = ['error' => 'Failed to move uploaded file: ' . $name];
+        }
     }
-    try{
-    $db = getDB2();    
-    $dummyStudent = "stu123762023";
-    $filePath = $targetPath; 
-    $stmt = $db->prepare("INSERT INTO SapDocuments(studentUniqueId,filePath, uploaded_at) VALUES (:studentUniqueId,:file_path, NOW())");
-    $stmt->bindParam(':studentUniqueId', $dummyStudent);
-    $stmt->bindParam(':file_path', $filePath);
-    $stmt->execute();
-    echo json_encode([
-        'message' => 'File uploaded and saved to database successfully',
-        'filename' => $filename,
-        'file_path' => $filePath,
-    ]);
-    }
-    catch (PDOException $e) {
-        echo json_encode(['message' => 'File uploaded Failed'.$e->getMessage()]);
-    }
+
+    echo json_encode($responses);
 }
 
 
-function uploadImagesForSlider()
+function uploadBrochures()
 {
+    $app = \Slim\Slim::getInstance();
+
     // Directory to save uploaded files
-    $directory = __DIR__ . '/SliderImages';
+    $directory = __DIR__ . '/brochures';
 
     if (!file_exists($directory)) {
         mkdir($directory, 0777, true); // Ensure the directory exists
     }
 
     // Check if files are uploaded
-    if (!isset($_FILES['files'])) {
+    if (!isset($_FILES['file'])) {
+        echo json_encode(['error' => 'No file uploaded']);
+        return;
+    }
+    
+    // Get the username from the POST data
+    $collegename = isset($_POST['collegeName']) ? $_POST['collegeName'] : null;
+    //$announcementId = isset($_POST['announcementId']) ? $_POST['announcementId'] : null;
+  
+    if (!$collegename) {
+        echo json_encode(['error' => 'Username is required']);
+        return;
+    }
+
+    $responses = [];
+    $uploadedFiles = $_FILES['file'];
+
+    // Validate structure: Handle multiple or single uploads
+    $fileCount = is_array($uploadedFiles['name']) ? count($uploadedFiles['name']) : 1;
+
+    for ($i = 0; $i < $fileCount; $i++) {
+        // Adjust access based on whether it's a single or multiple upload
+        $name = is_array($uploadedFiles['name']) ? $uploadedFiles['name'][$i] : $uploadedFiles['name'];
+        $tmpName = is_array($uploadedFiles['tmp_name']) ? $uploadedFiles['tmp_name'][$i] : $uploadedFiles['tmp_name'];
+        $error = is_array($uploadedFiles['error']) ? $uploadedFiles['error'][$i] : $uploadedFiles['error'];
+
+        if ($error !== UPLOAD_ERR_OK) {
+            $responses[] = ['error' => 'Error during file upload for file: ' . $name];
+            continue;
+        }
+
+        $extension = pathinfo($name, PATHINFO_EXTENSION);
+        $basename = bin2hex(random_bytes(8));
+        $filename = sprintf('%s.%s', $basename, $extension);
+        $targetPath = $directory . DIRECTORY_SEPARATOR . $filename;
+
+        if (move_uploaded_file($tmpName, $targetPath)) {
+            try {
+                $filePath = $targetPath;
+                $newPath = str_replace('/home3/traveoxg/public_html/', 'https://www.travelsawari.com/', $filePath);
+                $db = getDB2();
+                $stmt = $db->prepare("INSERT INTO brochureLinks(brochureImages,collegeName) VALUES (:brochureImages, :collegeName)");
+                $stmt->bindParam(':brochureImages', $newPath);
+                $stmt->bindParam(':collegeName', $collegename);
+                $stmt->execute();
+
+                $responses[] = [
+                    'message' => 'File uploaded and saved to database successfully',
+                    'filename' => $filename,
+                    'file_path' => $filePath,
+                ];
+            } catch (PDOException $e) {
+                $responses[] = ['error' => 'Database error: ' . $e->getMessage()];
+            }
+        } else {
+            $responses[] = ['error' => 'Failed to move uploaded file: ' . $name];
+        }
+    }
+
+    echo json_encode($responses);
+}
+
+
+
+function uploadImagesForSlider()
+{
+    $directory = __DIR__ . '/SliderImages';
+
+    if (!file_exists($directory)) {
+        mkdir($directory, 0777, true);
+    }
+
+    if (!isset($_FILES['file'])) {
         echo json_encode(['error' => 'No files uploaded']);
         return;
     }
 
-    $uploadedFiles = $_FILES['files'];
-    $responses = []; // To store the response for each file
+    $responses = [];
+    $uploadedFiles = $_FILES['file'];
+    $imageLevel = isset($_POST['level']) ? $_POST['level'] : null;
 
-    for ($i = 0; $i < count($uploadedFiles['name']); $i++) {
-        // Check for errors in each uploaded file
-        if ($uploadedFiles['error'][$i] !== UPLOAD_ERR_OK) {
-            $responses[] = ['error' => 'Error during file upload for file: ' . $uploadedFiles['name'][$i]];
+    // Validate structure: Handle multiple or single uploads
+    $fileCount = is_array($uploadedFiles['name']) ? count($uploadedFiles) : 1;
+    print_r($_FILES);
+    for ($i = 0; $i < $fileCount; $i++) {
+        // Adjust access based on whether it's a single or multiple upload
+        $name = is_array($uploadedFiles['name']) ? $uploadedFiles['name'][$i] : $uploadedFiles['name'];
+        $tmpName = is_array($uploadedFiles['tmp_name']) ? $uploadedFiles['tmp_name'][$i] : $uploadedFiles['tmp_name'];
+        $error = is_array($uploadedFiles['error']) ? $uploadedFiles['error'][$i] : $uploadedFiles['error'];
+
+        if ($error !== UPLOAD_ERR_OK) {
+            $responses[] = ['error' => 'Error during file upload for file: ' . $name];
             continue;
         }
 
-        // Generate a unique file name
-        $extension = pathinfo($uploadedFiles['name'][$i], PATHINFO_EXTENSION);
-        $basename = bin2hex(random_bytes(8)); // Generate a random name
+        $extension = pathinfo($name, PATHINFO_EXTENSION);
+        $basename = bin2hex(random_bytes(8));
         $filename = sprintf('%s.%s', $basename, $extension);
-
-        // Move the file to the upload directory
         $targetPath = $directory . DIRECTORY_SEPARATOR . $filename;
-        if (move_uploaded_file($uploadedFiles['tmp_name'][$i], $targetPath)) {
+        if (move_uploaded_file($tmpName, $targetPath)) {
             try {
                 $db = getDB2();
                 $filePath = $targetPath;
-
-                // Insert file details into the database
-                $stmt = $db->prepare("INSERT INTO SliderImagesUrls(filePath, uploaded_at) VALUES (:file_path, NOW())");
-                $stmt->bindParam(':file_path', $filePath);
+                $newPath = str_replace('/home3/traveoxg/public_html/', 'https://www.travelsawari.com/', $filePath);
+               
+                $stmt = $db->prepare("INSERT INTO SliderImagesUrls(filePath, uploaded_at, sliderLevel) VALUES (:file_path, NOW(), :sliderLevel)");
+                $stmt->bindParam(':file_path', $newPath);
+                $stmt->bindParam(':sliderLevel', $imageLevel);
                 $stmt->execute();
 
                 $responses[] = [
@@ -387,11 +964,84 @@ function uploadImagesForSlider()
                 ];
             }
         } else {
-            $responses[] = ['error' => 'Failed to move uploaded file: ' . $uploadedFiles['name'][$i]];
+            $responses[] = ['error' => 'Failed to move uploaded file: ' . $name];
         }
     }
 
-    // Return the response for all files
+    echo json_encode($responses);
+}
+
+function uploadPaymentScreenshots()
+{
+    $directory = __DIR__ . '/ScreenshotsImages';
+
+    if (!file_exists($directory)) {
+        mkdir($directory, 0777, true);
+    }
+
+    if (!isset($_FILES['file'])) {
+        echo json_encode(['error' => 'No files uploaded']);
+        return;
+    }
+
+    $responses = [];
+    $uploadedFiles = $_FILES['file'];
+    $studentUniqueId = isset($_POST['studentUniqueId'])? $_POST['studentUniqueId'] : null;
+    $paymentDateTime = isset($_POST['paymentDateTime'])? $_POST['paymentDateTime'] : null;
+    $paymentAmount = isset($_POST['paymentamount'])? $_POST['paymentamount'] : null;
+    $upiId = isset($_POST['upiId'])? $_POST['upiId'] : null;
+    $status = isset($_POST['status'])? $_POST['status'] : null;
+    //$imageLevel = isset($_POST['level']) ? $_POST['level'] : null;
+
+    // Validate structure: Handle multiple or single uploads
+    $fileCount = is_array($uploadedFiles['name']) ? count($uploadedFiles) : 1;
+    print_r($_FILES);
+    for ($i = 0; $i < $fileCount; $i++) {
+        // Adjust access based on whether it's a single or multiple upload
+        $name = is_array($uploadedFiles['name']) ? $uploadedFiles['name'][$i] : $uploadedFiles['name'];
+        $tmpName = is_array($uploadedFiles['tmp_name']) ? $uploadedFiles['tmp_name'][$i] : $uploadedFiles['tmp_name'];
+        $error = is_array($uploadedFiles['error']) ? $uploadedFiles['error'][$i] : $uploadedFiles['error'];
+
+        if ($error !== UPLOAD_ERR_OK) {
+            $responses[] = ['error' => 'Error during file upload for file: ' . $name];
+            continue;
+        }
+
+        $extension = pathinfo($name, PATHINFO_EXTENSION);
+        $basename = bin2hex(random_bytes(8));
+        $filename = sprintf('%s.%s', $basename, $extension);
+        $targetPath = $directory . DIRECTORY_SEPARATOR . $filename;
+        if (move_uploaded_file($tmpName, $targetPath)) {
+            try {
+                $db = getDB2();
+                $filePath = $targetPath;
+                $newPath = str_replace('/home3/traveoxg/public_html/', 'https://www.travelsawari.com/', $filePath);
+               
+                $stmt = $db->prepare("INSERT INTO PaymentDetails(filePath, uploaded_at, studentUniqueId, paymentDateTime, paymentamount, upiId, status) VALUES (:file_path, NOW(), :studentUniqueId, :paymentDateTime, :paymentamount, :upiId, :status)");
+                $stmt->bindParam(':file_path', $newPath);
+                $stmt->bindParam(':studentUniqueId', $studentUniqueId);
+                $stmt->bindParam(':paymentDateTime',$paymentDateTime); 
+                $stmt->bindParam(':paymentamount',$paymentAmount);
+                $stmt->bindParam(':upiId',$upiId); 
+                $stmt->bindParam(':status',$status);
+                $stmt->execute();
+
+                $responses[] = [
+                    'message' => 'File uploaded and saved to database successfully',
+                    'filename' => $filename,
+                    'file_path' => $filePath,
+                ];
+            } catch (PDOException $e) {
+                $responses[] = [
+                    'error' => 'Database error for file: ' . $filename,
+                    'details' => $e->getMessage(),
+                ];
+            }
+        } else {
+            $responses[] = ['error' => 'Failed to move uploaded file: ' . $name];
+        }
+    }
+
     echo json_encode($responses);
 }
 
@@ -435,7 +1085,7 @@ function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
      //echo "2222 ".$studentUniqueId;
     try {
         // Fetch data from the database
-        $stmt = $db->prepare("SELECT * FROM ApplicationDetails WHERE auto_student_id = :autoStudentId");
+        $stmt = $db->prepare("SELECT * FROM ApplicationDetails WHERE auto_student_id = :autoStudentId and id = (Select MAX(id) from ApplicationDetails)");
         $stmt->bindParam(":autoStudentId", $studentUniqueId); // Bind the parameter
         $stmt->execute(); // Execute the prepared statement
       
@@ -475,6 +1125,7 @@ function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
             'Pincode' => $user['pinCode'],
             'Phone Number' => $user['phoneNumber'],
             'Course Willing To Study' => $user['course_willing_to_study'],
+            'College Willing To Study' => $user['college_willing_to_study'],
             'Student Email' => $user['student_email']
         ];
 
@@ -533,8 +1184,8 @@ function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
 }
 
 function retrieveSliderImages(){
-    
-    $sql = "SELECT * FROM `SliderImagesUrls` ORDER BY uploaded_at DESC LIMIT 5";
+    ///ORDER BY uploaded_at DESC LIMIT 15
+    $sql = "SELECT * FROM SliderImagesUrls WHERE sliderLevel!=''";
     try {
         $db = getDB2(); // Assumes getDB2() is a valid function that returns a DB 
         $statement = $db->prepare($sql);
