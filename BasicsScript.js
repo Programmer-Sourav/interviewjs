@@ -668,3 +668,36 @@ async function demoGithubUser() {
   }
 
   f();
+
+  function addValue(a,  b){
+    a = a+10;
+    b = b+20;
+    console.log("Values Inside ", a + ", "+b)
+    let sum = a+b;
+    return sum;
+  }
+
+  let a = 20;
+  let b = 30;
+  console.log(" Values Before ", a +", "+b );
+  let sum = addValue(a,b)
+  console.log("Sum ", sum);
+  console.log("Values after ", a +", "+b )
+
+  function addValue2(c, d){
+    c = {...c, gender: "male"}
+    d = {...c, gender: "male"}
+    console.log("Values inside "+c , d)
+    let arrayOfObjects = [];
+    arrayOfObjects.push(c);
+    arrayOfObjects.push(d);
+    return arrayOfObjects;
+  }
+
+  let c = {name: "Sn", age: "35"}
+  let d = {name: "Ari", age: "35"}
+  console.log("Values before ", c, d)
+  let result = addValue2(c, d)
+  console.log("Result "+result)
+  console.log("Values after ", c, d)
+

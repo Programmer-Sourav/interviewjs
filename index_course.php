@@ -1,4 +1,9 @@
 <?php
+ini_set('log_errors', 1);
+ini_set('error_log', '/home3/traveoxg/public_html/error_log');
+
+// Disable error display for production
+ini_set('display_errors', 0);
 
 require_once 'db.php';
 require_once 'vendor/slim/slim/Slim/Slim.php';
@@ -53,11 +58,11 @@ function loginStudent() {
         $username = $data['username'];
         $password = $data['password'];
 
-        $sql = "SELECT * FROM users WHERE username = :username";
+        $sql = "SELECT * FROM users WHERE phonenumber = :phonenumber";
         try {
             $db = getDB2();
             $stmt = $db->prepare($sql);
-            $stmt->bindParam(':username', $username);
+            $stmt->bindParam(':phonenumber', $username);
             $stmt->execute();
 
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -398,6 +403,81 @@ function getAvailableCollegesByCourse($coursename)
     echo json_encode($arr1);
 }
 
+// function getAvailableCollegesByCourse($coursename)
+// {
+//     // Exploding the comma-separated string into an array
+//     $coursenameExploded = explode(",", $coursename);
+//     $length = count($coursenameExploded);
+
+//     // Start building the SQL query
+//     $sql = "SELECT * FROM `CollegeDetails` WHERE ";
+
+//     // Prepare an array to store the `LIKE` conditions
+//     $likeConditions = [];
+
+//     if ($length > 1) {
+//         // Loop through the exploded array and create a `LIKE` condition for each value
+//         for ($i = 0; $i < $length; $i++) {
+//             // Add each LIKE condition (with wildcard `%`) to the array
+//             $likeConditions[] = "filterBy LIKE :coursename" . $i;
+//         }
+
+//         // Join the conditions with `OR` (for multiple LIKE conditions)
+//         $sql .= implode(" OR ", $likeConditions);
+//     } else {
+//         // If there's only one value, use LIKE with the single value
+//         $sql .= "filterBy LIKE :coursename0";
+//     }
+
+//     // Prepare the search term
+//     $arr = [];
+//     try {
+//         $db = getDB2(); // Assumes getDB2() is a valid function that returns a DB connection
+//         $statement = $db->prepare($sql);
+
+//         // Bind parameters for each course name (with wildcards)
+//         for ($i = 0; $i < $length; $i++) {
+//             $searchTerm = "%" . $coursenameExploded[$i] . "%";
+//             $statement->bindValue(":coursename" . $i, $searchTerm, PDO::PARAM_STR);
+//         }
+
+//         // If there's only one course name, bind the :coursename0 parameter
+//         if ($length === 1) {
+//             $searchTerm = "%" . $coursenameExploded[0] . "%";
+//             $statement->bindValue(":coursename0", $searchTerm, PDO::PARAM_STR);
+//         }
+
+//         // Execute the query
+//         $statement->execute();
+
+//         // Fetch the results
+//         $availableColleges = $statement->fetchAll(PDO::FETCH_OBJ);
+
+//         // Prepare the response
+//         $arr = [
+//             "status" => 200,
+//             "message" => "List of Colleges Found",
+//             "data" => $availableColleges
+//         ];
+//     } catch (PDOException $ex) {
+//         // Error handling
+//         $arr = [
+//             "status" => 500,
+//             "message" => "Error, No Colleges Found.",
+//             "error" => $ex->getMessage() // Optionally include the error message for debugging
+//         ];
+//     }
+
+//     // Wrapping the response
+//     $arr1 = [
+//         "response" => $arr
+//     ];
+
+//     // Encode the array into a JSON string and send it as the response
+//     echo json_encode($arr1);
+// }
+
+
 function getAnnouncementDetails(){
     $sql = "SELECT 
     noticeboard.*, 
@@ -442,7 +522,7 @@ WHERE
 
 
 function getCoursesAvailable(){
-    $sql = "SELECT *FROM CoursesAvailable";
+    $sql = "SELECT * FROM `CoursesAvailable` GROUP BY coursename ORDER BY coursename ASC";
     try {
         $db = getDB2(); // Assumes getDB2() is a valid function that returns a DB 
         $statement = $db->prepare($sql);
@@ -623,10 +703,15 @@ function saveApplicationDetails(){
     
        
         if(!empty($data['firstname']) && !empty($data['lastname']) && !empty($data['parent_first_name']) && !empty($data['parent_last_name'])
-        && !empty($data['schoolName']) && !empty($data['twelfth_marks']) && !empty($data['madhyamik_marks']) && !empty($data['entrance_test_type']) 
+        && !empty($data['twelfth_marks']) && !empty($data['madhyamik_marks']) && !empty($data['entrance_test_type']) 
         && !empty($data['enter_rank']) && !empty($data['street_address_1']) && !empty($data['street_address_2']) && !empty($data['city'])
-        && !empty($data['state']) && !empty($data['pinCode']) && !empty($data['phoneNumber']) && !empty($data['course_willing_to_study'])
-        && !empty($data['studentEmail']) && !empty($data['username'])){
+        && !empty($data['state']) && !empty($data['pinCode']) && !empty($data['phoneNumber']) && !empty($data['course_willing_to_study']) 
+        && !empty($data['college_willing_to_study']) && !empty($data['studentEmail']) && !empty($data['username'])
+        && !empty($data['schoolName']) && !empty($data['passingYear']) && !empty($data['rollNumber']) && !empty($data['totalMarks']) 
+        && !empty($data['obtainedMarks']) && !empty($data['scoreTenth'])
+        && !empty($data['schoolName12th']) && !empty($data['passingYear12th']) && !empty($data['rollNumber12th']) && !empty($data['totalMarks12th'])
+        && !empty($data['obtainedMarks12th'])  && !empty($data['score12th']) && !empty($data['caste']) 
+        && !empty($data['mothers_first_name']) && !empty($data['mothers_last_name'])){
             
             $username = $data['username'];
             $sql1 = "SELECT studentUniqueId FROM users WHERE username = :username and studentUniqueId != ''";
@@ -634,13 +719,12 @@ function saveApplicationDetails(){
            $stmt1 = $db->prepare($sql1);
            $stmt1->bindParam(':username', $username);
           $stmt1->execute();
-
           $auto_student_id = "";
 if ($stmt1->rowCount() > 0) {
     $result = $stmt1->fetch(PDO::FETCH_ASSOC);
     $auto_student_id = $result['studentUniqueId'];
 } else {
-    $auto_student_id = "stu2024" . floor(rand(31, 999) * 31);
+    $auto_student_id = "SAP2025" . floor(rand(31, 999) * 31);
 }
 
      
@@ -661,15 +745,37 @@ if ($stmt1->rowCount() > 0) {
         $phoneNumber = $data['phoneNumber'];
         $courseWillingToStudy = $data['course_willing_to_study'];
         $studentEmail = $data['studentEmail'];
-        $selectedCollege = $data['selectedCollege'];
-       
+        $selectedCollege = $data['college_willing_to_study'];
+        $mothersFirstName = $data['mothers_first_name'];
+        $mothersLastName = $data['mothers_last_name'];
+        $tenthSchoolName = $data['schoolName'];
+        $tenthPassingYear = $data['passingYear'];
+        $tenthRollNumber = $data['rollNumber'];
+        $tenthTotalMarks = $data['totalMarks'];
+        $tenthObtainedMarks = $data['obtainedMarks'];
+        $tenthScorePercent = $data['scoreTenth'];
+        $twelfthSchoolName = $data['schoolName12th'];
+        $twelfthPassingYear = $data['passingYear12th'];
+        $twelfthRollNumber = $data['rollNumber12th'];
+        $twelfthTotalMarks = $data['totalMarks12th'];
+        $twelfthObtainedMarks = $data['obtainedMarks12th'];
+        $twelfthScorePercent = $data['score12th'];
+        $caste = $data['caste'];
+
+
     
-        $sql = "INSERT INTO ApplicationDetails(auto_student_id, stu_firstName, stu_lastName, parent_first_name, parent_last_name, schoolName, twelfth_marks, madhyamik_marks, entrance_test_type, student_rank, street_address_1, street_address_2, city, state, pinCode, phoneNumber, course_willing_to_study, student_email, college_willing_to_study) VALUES (:autoStudentId, :firstName, :lastName, :parent_first_name, :parent_last_name, :schoolName, :twelfth_marks, :madhyamik_marks, :entrance_test_type, :enter_rank, :street_address_1, :street_address_2, :city, :state, :pinCode, :phoneNumber, :course_willing_to_study, :student_email, :college_willing_to_study)";
+        $sql = "INSERT INTO ApplicationDetails(auto_student_id, stu_firstName, stu_lastName, parent_first_name, parent_last_name, schoolName, twelfth_marks, madhyamik_marks, entrance_test_type, student_rank, street_address_1, street_address_2, city, state, pinCode, phoneNumber, course_willing_to_study, student_email, college_willing_to_study,
+         mothersFirstName, mothersLastName, tenthSchoolName, tenthPassingYear, tenthRollNumber,tenthTotalMarks,
+         tenthObtainedMarks, tenthScorePercent,twelfthSchoolName,twelfthPassingYear,twelfthRollNumber,twelfthTotalMarks,
+         twelfthObtainedMarks,twelfthScorePercent, caste ) VALUES (:autoStudentId, :firstName, :lastName, :parent_first_name, :parent_last_name, :schoolName, :twelfth_marks, :madhyamik_marks, :entrance_test_type, :enter_rank, :street_address_1, :street_address_2, :city, :state, :pinCode, :phoneNumber,
+          :course_willing_to_study, :student_email, :college_willing_to_study,
+         :mothersFirstName, :mothersLastName, :tenthSchoolName, :tenthPassingYear, :tenthRollNumber, :tenthTotalMarks,
+         :tenthObtainedMarks, :tenthScorePercent, :twelfthSchoolName, :twelfthPassingYear, :twelfthRollNumber, :twelfthTotalMarks,
+         :twelfthObtainedMarks, :twelfthScorePercent, :caste)";
         try{
             $db = getDB2();
             $statement = $db->prepare($sql);
             $statement->bindParam(":autoStudentId", $auto_student_id);
-            $statement->bindParam(":firstName", $firstName);
             $statement->bindParam(":firstName", $firstName);
             $statement->bindParam(":lastName", $lastName);
             $statement->bindParam(":parent_first_name", $parentFirstName);
@@ -688,8 +794,23 @@ if ($stmt1->rowCount() > 0) {
             $statement->bindParam(":course_willing_to_study", $courseWillingToStudy);
             $statement->bindParam(":college_willing_to_study", $selectedCollege);
             $statement ->bindParam(":student_email", $studentEmail);
+            $statement ->bindParam(":mothersFirstName", $mothersFirstName);
+            $statement ->bindParam(":mothersLastName", $mothersLastName);
+            $statement ->bindParam(":tenthSchoolName", $tenthSchoolName);
+            $statement ->bindParam(":tenthPassingYear", $tenthPassingYear);
+            $statement ->bindParam(":tenthRollNumber", $tenthRollNumber);
+            $statement ->bindParam(":tenthTotalMarks", $tenthTotalMarks);
+            $statement ->bindParam(":tenthObtainedMarks", $tenthObtainedMarks);
+            $statement ->bindParam(":tenthScorePercent", $tenthScorePercent);
+            $statement ->bindParam(":twelfthSchoolName", $twelfthSchoolName);
+            $statement ->bindParam(":twelfthPassingYear", $twelfthPassingYear);
+            $statement ->bindParam(":twelfthRollNumber", $twelfthRollNumber);
+            $statement ->bindParam(":twelfthTotalMarks", $twelfthTotalMarks);
+            $statement ->bindParam(":twelfthObtainedMarks", $twelfthObtainedMarks);
+            $statement ->bindParam(":twelfthScorePercent", $twelfthScorePercent);
+            $statement ->bindParam(":caste", $caste);
             $statement->execute();
-            //echo "4444 ".$auto_student_id; 
+          
          $emailStatus = generatePdfReport($auto_student_id, $firstName, $studentEmail);
 
          $sql = "UPDATE users SET studentUniqueId= :studentUniqueId WHERE username = :username";
@@ -1083,6 +1204,8 @@ function retrieveDocument($id)
 function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
     $db = getDB2();
      //echo "2222 ".$studentUniqueId;
+     $filePathImage = __DIR__ . '/pdfbg/bgimage.jpeg';
+
     try {
         // Fetch data from the database
         $stmt = $db->prepare("SELECT * FROM ApplicationDetails WHERE auto_student_id = :autoStudentId and id = (Select MAX(id) from ApplicationDetails)");
@@ -1100,12 +1223,32 @@ function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
         // Initialize FPDF
         $pdf = new FPDF();
         $pdf->AddPage();
+
+        
+// Function to add image as background to each page
+function addBackgroundImage($pdf, $filePathImage) {
+    // Set the image on each page
+    $pdf->Image($filePathImage, 0, 0, 210, 297);  // Fit the image to the entire A4 page (210mm x 297mm)
+}
+
+// Add the image as background to the first page
+addBackgroundImage($pdf, $filePathImage);
+
         $pdf->SetFont('Arial', 'B', 16);
 
         // Add title
-        $pdf->Cell(190, 10, 'Student Report', 0, 1, 'C');
+        $pdf->Cell(190, 10, '', 0, 1, 'C');
         $pdf->Ln(10);
 
+        $jsonData = $user['college_willing_to_study'];
+        $data = json_decode($jsonData, true);
+
+        if ($data === null) {
+            echo "Error decoding JSON data.";
+            return;
+        }
+        // echo "JSONDATA ".$jsonData;
+        $traversedData = traverseCourseAndStatus($data);
         // Define column headers and user values
         $fields = [
             'Unique Id' => $user['auto_student_id'],
@@ -1113,6 +1256,8 @@ function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
             'Last Name' => $user['stu_lastName'],
             'Parents First Name' => $user['parent_first_name'],
             'Parents Last Name' => $user['parent_last_name'],
+            'Mothers First Name' => $user['mothersFirstName'],
+            'Mothers Last Name' => $user['mothersLastName'],
             'School Name' => $user['schoolName'],
             'Twelfth Marks' => $user['twelfth_marks'],
             'Tenth Marks' => $user['madhyamik_marks'],
@@ -1124,23 +1269,53 @@ function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
             'State' => $user['state'],
             'Pincode' => $user['pinCode'],
             'Phone Number' => $user['phoneNumber'],
-            'Course Willing To Study' => $user['course_willing_to_study'],
-            'College Willing To Study' => $user['college_willing_to_study'],
-            'Student Email' => $user['student_email']
+            'College Willing To Study' => $traversedData,
+            'Student Email' => $user['student_email'],
+            'Tenth School Name' => $user['tenthSchoolName'],
+            'Tenth Passing Year' => $user['tenthPassingYear'],
+            'Tenth Roll Number' => $user['tenthRollNumber'],
+            'Tenth Total Marks' => $user['tenthTotalMarks'],
+            'Tenth Obtained Marks' => $user['tenthObtainedMarks'],
+            'Tenth Score' => $user['tenthScorePercent'],
+            '12th School Name' => $user['twelfthSchoolName'],
+            '12th Passing Year' => $user['twelfthPassingYear'],
+            '12th Roll Number' => $user['twelfthRollNumber'],
+            '12th Total Marks' => $user['twelfthTotalMarks'],
+            '12th Obtained Marks' => $user['twelfthObtainedMarks'],
+            '12th Score' => $user['twelfthScorePercent'],
+            'Caste Selected' => $user['caste']
         ];
 
         // Add table with headers and values
-        $pdf->SetFont('Arial', 'B', 12);
-        foreach ($fields as $header => $value) {
-            $pdf->Cell(90, 10, $header, 1, 0); // Header cell
-            $pdf->SetFont('Arial', '', 12);
-            $pdf->Cell(100, 10, $value, 1, 1); // Value cell
-            $pdf->SetFont('Arial', 'B', 12);
-        }
+       // Set font for table headers
+$pdf->SetFont('Arial', 'B', 12);
 
-        // Output the PDF as a file
-        $filePath = __DIR__ . '/Reports/Student_Report_' . $studentName . $studentUniqueId . '.pdf';
-        $pdf->Output('F', $filePath); // Save PDF to a file
+// Column widths (adjust these values according to your needs)
+$widths = [50, 140];
+
+// Loop through the fields and add them to the table
+$pdf->SetFont('Arial', 'B', 12);  // Header font
+foreach ($fields as $header => $value) {
+    // Calculate the row height based on the content
+    $height = 10;  // Default height
+    if (strlen($value) > 40) {
+        $height = ceil(strlen($value) / 40) * 2;  // Adjust the multiplier/divisor as needed
+    }
+
+    // Header
+    $pdf->Cell($widths[0], $height, $header, 1, 0, 'L');
+    
+    // Value
+    $pdf->SetFont('Arial', '', 12);  // Content font
+    $pdf->MultiCell($widths[1], $height, $value, 1, 'L');
+
+    //$pdf->Ln(); // Line break after each row
+}
+
+// Save PDF to a file
+$filePath = __DIR__ . '/Reports/Student_Report_' . $user['stu_firstName'] . '_' . $user['auto_student_id'] . '.pdf';
+$pdf->Output('F', $filePath);  // Save PDF to file
+
 
         // Send Email with the PDF
         $mail = new PHPMailer(true);
@@ -1150,13 +1325,13 @@ function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
             $mail->Port = 587;
             $mail->SMTPSecure = 'tls';
             $mail->SMTPAuth = true;
-            $mail->Username = "travelsawari@gmail.com";
-            $mail->Password = "ovhp qwgp cbqi pqpy"; // Application password
+            $mail->Username = "studentadmissionpoint@gmail.com";
+            $mail->Password = "xnkv pmka xjlr fpdp"; // Application password
 
             // Email Configuration
-            $mail->setFrom('travelsawari@gmail.com', 'Students Admission Point');
+            $mail->setFrom('studentadmissionpoint@gmail.com', 'Students Admission Point');
             $mail->addAddress($studentEmail, $studentName);
-            $mail->addAddress("travelsawari@gmail.com", $studentName);
+            $mail->addAddress("studentadmissionpoint@gmail.com", $studentName);
             $mail->Subject = 'Submitted Application Form by ' . $studentName;
             $mail->Body = 'Please find the submitted report.';
             $mail->AltBody = 'Please find the attached student report.';
@@ -1213,6 +1388,15 @@ function retrieveSliderImages(){
     // Encode the array into a JSON string and send it as the response
     echo json_encode($arr1);
 }
+
+function traverseCourseAndStatus($data) {
+    $result = "";
+    foreach ($data as $course => $status) {
+        $result = $result . "Course: $course, Status: $status\n";
+    }
+    return $result;
+}
+
 
 
 // function generatePdfReport($studentUniqueId, $studentName, $studentEmail) {
